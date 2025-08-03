@@ -1,0 +1,6 @@
+[submodule "agroclash-mobile"]
+	path = agroclash-mobile
+	url = git@github.com:niranjanbala/agroclash-mobile.git
+[submodule "agroclash-web"]
+	path = agroclash-web
+	url = git@github.com:niranjanbala/agroclash-web.git
