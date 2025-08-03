@@ -1,6 +1,7 @@
 // Service Factory for Mock/Real Service Switching
 
 import { config } from '../config/environment'
+import { ApiConfigManager } from '../config/api.config'
 
 // Import service interfaces
 import { 
@@ -8,7 +9,8 @@ import {
   MarketService, 
   XPService, 
   PestService,
-  NotificationService 
+  NotificationService,
+  ClanService 
 } from './interfaces'
 
 // Import mock implementations
@@ -16,11 +18,12 @@ import { MockWeatherService } from './mock/weather.service'
 import { MockMarketService } from './mock/market.service'
 import { MockXPService } from './mock/xp.service'
 import { MockPestService } from './mock/pest.service'
+import { MockClanService } from './mock/clan.service'
+import { MockNotificationService } from './mock/notification.service'
 
-// Import real implementations (to be implemented later)
-// import { OpenWeatherService } from './real/weather.service'
-// import { KrishiHubMarketService } from './real/market.service'
-// import { ExpoNotificationService } from './real/notification.service'
+// Import real implementations
+import { OpenWeatherMapService } from './real/weather.service'
+import { RealMarketService } from './real/market.service'
 
 export class ServiceFactory {
   private static weatherService: WeatherService | null = null
@@ -28,16 +31,26 @@ export class ServiceFactory {
   private static xpService: XPService | null = null
   private static pestService: PestService | null = null
   private static notificationService: NotificationService | null = null
+  private static clanService: ClanService | null = null
+  private static apiConfig = ApiConfigManager.getInstance()
 
   static getWeatherService(): WeatherService {
     if (!this.weatherService) {
-      if (config.services.useMockWeather) {
-        this.weatherService = new MockWeatherService()
-      } else {
-        // TODO: Implement real weather service
-        // this.weatherService = new OpenWeatherService()
-        console.warn('Real weather service not implemented, falling back to mock')
-        this.weatherService = new MockWeatherService()
+      const weatherConfig = this.apiConfig.getServiceConfig('weather')
+      
+      switch (weatherConfig.provider) {
+        case 'openweathermap':
+          try {
+            this.weatherService = new OpenWeatherMapService() as any
+          } catch (error) {
+            console.warn('Failed to initialize OpenWeatherMap service, falling back to mock:', error)
+            this.weatherService = new MockWeatherService()
+          }
+          break
+        case 'mock':
+        default:
+          this.weatherService = new MockWeatherService()
+          break
       }
     }
     return this.weatherService
@@ -45,13 +58,22 @@ export class ServiceFactory {
 
   static getMarketService(): MarketService {
     if (!this.marketService) {
-      if (config.services.useMockMarket) {
-        this.marketService = new MockMarketService()
-      } else {
-        // TODO: Implement real market service
-        // this.marketService = new KrishiHubMarketService()
-        console.warn('Real market service not implemented, falling back to mock')
-        this.marketService = new MockMarketService()
+      const marketConfig = this.apiConfig.getServiceConfig('market')
+      
+      switch (marketConfig.provider) {
+        case 'coinapi':
+        case 'custom':
+          try {
+            this.marketService = new RealMarketService() as any
+          } catch (error) {
+            console.warn('Failed to initialize real market service, falling back to mock:', error)
+            this.marketService = new MockMarketService()
+          }
+          break
+        case 'mock':
+        default:
+          this.marketService = new MockMarketService()
+          break
       }
     }
     return this.marketService
@@ -67,29 +89,40 @@ export class ServiceFactory {
 
   static getPestService(): PestService {
     if (!this.pestService) {
-      if (config.services.useMockPest) {
-        this.pestService = new MockPestService()
-      } else {
-        // TODO: Implement real pest service with ML models
-        console.warn('Real pest service not implemented, falling back to mock')
-        this.pestService = new MockPestService()
-      }
+      // Pest service is always mock as it's internal business logic
+      // In the future, this could integrate with ML models for pest prediction
+      this.pestService = new MockPestService()
     }
     return this.pestService
   }
 
   static getNotificationService(): NotificationService {
     if (!this.notificationService) {
-      if (config.services.useMockNotifications) {
-        // TODO: Implement mock notification service
-        throw new Error('Mock notification service not implemented yet')
-      } else {
-        // TODO: Implement real notification service
-        // this.notificationService = new ExpoNotificationService()
-        throw new Error('Real notification service not implemented yet')
+      const notificationConfig = this.apiConfig.getServiceConfig('notifications')
+      
+      switch (notificationConfig.provider) {
+        case 'firebase':
+        case 'onesignal':
+        case 'pusher':
+          // TODO: Implement real notification services
+          console.warn('Real notification service not implemented, falling back to mock')
+          this.notificationService = new MockNotificationService()
+          break
+        case 'mock':
+        default:
+          this.notificationService = new MockNotificationService()
+          break
       }
     }
     return this.notificationService
+  }
+
+  static getClanService(): ClanService {
+    if (!this.clanService) {
+      // Clan service is always mock as it's internal business logic
+      this.clanService = new MockClanService()
+    }
+    return this.clanService
   }
 
   // Method to reset all services (useful for testing)
@@ -99,6 +132,7 @@ export class ServiceFactory {
     this.xpService = null
     this.pestService = null
     this.notificationService = null
+    this.clanService = null
   }
 
   // Method to override services for testing
@@ -122,18 +156,27 @@ export class ServiceFactory {
     this.notificationService = service
   }
 
+  static setClanService(service: ClanService): void {
+    this.clanService = service
+  }
+
   // Method to get service configuration info
   static getServiceConfig(): {
-    weather: 'mock' | 'real'
-    market: 'mock' | 'real'
-    pest: 'mock' | 'real'
-    notifications: 'mock' | 'real'
+    weather: string
+    market: string
+    pest: string
+    notifications: string
+    auth: string
+    storage: string
   } {
+    const apiConfig = this.apiConfig.getConfig()
     return {
-      weather: config.services.useMockWeather ? 'mock' : 'real',
-      market: config.services.useMockMarket ? 'mock' : 'real',
-      pest: config.services.useMockPest ? 'mock' : 'real',
-      notifications: config.services.useMockNotifications ? 'mock' : 'real'
+      weather: apiConfig.services.weather.provider,
+      market: apiConfig.services.market.provider,
+      pest: 'mock', // Always mock for now
+      notifications: apiConfig.services.notifications.provider,
+      auth: apiConfig.services.auth.provider,
+      storage: apiConfig.services.storage.provider
     }
   }
 
@@ -142,6 +185,87 @@ export class ServiceFactory {
     if (config.development.enableDebugLogs) {
       const serviceConfig = this.getServiceConfig()
       console.log('AgroClash Service Configuration:', serviceConfig)
+      
+      // Log API config validation
+      const validation = this.apiConfig.validate()
+      if (!validation.valid) {
+        console.warn('API Configuration Issues:', validation.errors)
+      }
+    }
+  }
+
+  // Method to get API configuration manager
+  static getApiConfig(): ApiConfigManager {
+    return this.apiConfig
+  }
+
+  // Method to switch service providers at runtime
+  static switchServiceProvider<T extends keyof typeof this.apiConfig.getConfig.services>(
+    service: T, 
+    provider: string
+  ): void {
+    this.apiConfig.updateServiceConfig(service as any, { provider } as any)
+    
+    // Reset the corresponding service to force re-initialization
+    switch (service) {
+      case 'weather':
+        this.weatherService = null
+        break
+      case 'market':
+        this.marketService = null
+        break
+      case 'notifications':
+        this.notificationService = null
+        break
+    }
+  }
+
+  // Method to get service health status
+  static async getServiceHealthStatus(): Promise<{
+    weather: boolean
+    market: boolean
+    notifications: boolean
+  }> {
+    const results = await Promise.allSettled([
+      this.checkServiceHealth('weather'),
+      this.checkServiceHealth('market'),
+      this.checkServiceHealth('notifications')
+    ])
+
+    return {
+      weather: results[0].status === 'fulfilled' ? results[0].value : false,
+      market: results[1].status === 'fulfilled' ? results[1].value : false,
+      notifications: results[2].status === 'fulfilled' ? results[2].value : false
+    }
+  }
+
+  private static async checkServiceHealth(serviceType: string): Promise<boolean> {
+    try {
+      let service: any
+      
+      switch (serviceType) {
+        case 'weather':
+          service = this.getWeatherService()
+          break
+        case 'market':
+          service = this.getMarketService()
+          break
+        case 'notifications':
+          service = this.getNotificationService()
+          break
+        default:
+          return false
+      }
+
+      // Check if service has a health check method
+      if (service && typeof service.healthCheck === 'function') {
+        return await service.healthCheck()
+      }
+
+      return true // Assume healthy if no health check method
+    } catch (error) {
+      console.error(`Health check failed for ${serviceType}:`, error)
+      return false
     }
   }
 }

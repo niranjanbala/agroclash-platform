@@ -81,11 +81,32 @@ export interface ClanService {
 }
 
 export interface NotificationService {
-  sendPushNotification(userId: string, title: string, body: string, data?: any): Promise<void>
-  scheduleNotification(userId: string, title: string, body: string, scheduledTime: Date, data?: any): Promise<string>
-  cancelNotification(notificationId: string): Promise<void>
-  subscribeToTopic(userId: string, topic: string): Promise<void>
-  unsubscribeFromTopic(userId: string, topic: string): Promise<void>
+  // Core notification operations
+  sendNotification(userId: string, notification: any): Promise<any>
+  getNotifications(userId: string, limit?: number, offset?: number): Promise<any[]>
+  markAsRead(notificationId: string): Promise<void>
+  markAllAsRead(userId: string): Promise<void>
+  deleteNotification(notificationId: string): Promise<void>
+  
+  // Push notification operations
+  registerPushToken(userId: string, token: string, platform: 'ios' | 'android' | 'web'): Promise<void>
+  sendPushNotification(userId: string, title: string, body: string, data?: Record<string, any>): Promise<void>
+  
+  // Scheduled notifications
+  scheduleNotification(userId: string, notification: any, scheduledFor: Date): Promise<string>
+  cancelScheduledNotification(scheduleId: string): Promise<void>
+  
+  // Preferences
+  getNotificationPreferences(userId: string): Promise<any>
+  updateNotificationPreferences(userId: string, preferences: any): Promise<any>
+  
+  // Real-time subscriptions
+  subscribeToNotifications(userId: string, callback: (notification: any) => void): () => void
+  subscribeToUserUpdates(userId: string, callback: (update: any) => void): () => void
+  
+  // Bulk operations
+  sendBulkNotifications(notifications: Array<{ userId: string; notification: any }>): Promise<void>
+  getUnreadCount(userId: string): Promise<number>
 }
 
 export interface PestService {

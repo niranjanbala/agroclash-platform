@@ -1,0 +1,58 @@
+{
+  "name": "agroclash-platform",
+  "version": "1.0.0",
+  "description": "Gamified agriculture platform - Clash of Clans for Farmers",
+  "private": true,
+  "workspaces": [
+    "agroclash-web",
+    "agroclash-mobile",
+    "lib"
+  ],
+  "scripts": {
+    "test": "node test-runner.js",
+    "test:unit": "node test-runner.js unit",
+    "test:integration": "node test-runner.js integration",
+    "test:e2e": "node test-runner.js e2e",
+    "test:performance": "node test-runner.js performance",
+    "test:visual": "node test-runner.js visual",
+    "test:cross-platform": "node test-runner.js cross-platform",
+    "test:offline": "node test-runner.js offline",
+    "test:load": "cd lib && npm run test:load",
+    "test:supabase": "cd lib && npm run test:supabase",
+    "test:comprehensive": "cd lib && npm run test:comprehensive",
+    "test:ci": "npm run test:unit && npm run test:integration && npm run test:cross-platform",
+    "dev:web": "cd agroclash-web && npm run dev",
+    "dev:mobile": "cd agroclash-mobile && npm start",
+    "build:web": "cd agroclash-web && npm run build",
+    "build:mobile": "cd agroclash-mobile && npm run android",
+    "install:all": "npm install && cd agroclash-web && npm install && cd ../agroclash-mobile && npm install && cd ../lib && npm install",
+    "clean": "rm -rf node_modules agroclash-web/node_modules agroclash-mobile/node_modules lib/node_modules",
+    "lint": "cd agroclash-web && npm run lint",
+    "setup:test": "node -e \"require('./test.config.js').setupTestEnvironment()\"",
+    "validate:test": "node -e \"require('./test.config.js').validateTestEnvironment()\""
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/agroclash-platform.git"
+  },
+  "keywords": [
+    "agriculture",
+    "gamification",
+    "farming",
+    "pwa",
+    "mobile",
+    "react-native",
+    "nextjs",
+    "supabase"
+  ],
+  "author": "AgroClash Team",
+  "license": "MIT"
+}
